@@ -1,0 +1,5 @@
+App-TextTemplatePermuteUtils-*
+.build
+*~
+nytprof*
+.DS_Store
