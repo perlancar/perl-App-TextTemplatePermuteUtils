@@ -1,16 +1,16 @@
 package App::TextTemplatePermuteUtils;
 
-# AUTHORITY
-# DATE
-# DIST
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
 
-use File::Slurper qw(read_text);
+#use File::Slurper qw(read_text);
 use Text::Template::Permute;
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 our %SPEC;
 
@@ -29,7 +29,10 @@ $SPEC{template_permute} = {
         },
         clipboard => {
             schema => ['str*', in=>['tee','only']],
-            cmdline_aliases => {Y=>{issummary=>},
+            cmdline_aliases => {
+                Y=>{is_flag=>1, summary=>'Shortcut for --clipboard=tee', code=>sub { $_[0]{clipboard} = 'tee' }},
+                y=>{is_flag=>1, summary=>'Shortcut for --clipboard=only', code=>sub { $_[0]{clipboard} = 'only' }},
+            },
         },
     },
 };
@@ -45,8 +48,8 @@ sub template_permute {
 
     if ($clipboard) {
         require Clipboard::Any;
-        for my (@res) {
-            Clipboard::Any::add_clipboard_content(content => $_);
+        for my $content (@res) {
+            Clipboard::Any::add_clipboard_content(content => $content);
         }
     }
 
