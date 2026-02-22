@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 #use File::Slurper qw(read_text);
+use List::Util ();
 use Text::Template::Permute;
 
 # AUTHORITY
@@ -19,20 +20,38 @@ $SPEC{template_permute} = {
     summary => 'Process a Text::Template::Permute template and output the results',
     args => {
         template => {
+            summary => 'The template string',
             schema => 'str*',
             pos => 0,
             cmdline_src => 'stdin_or_file',
         },
         array => {
+            summary => 'Return items as array, not as a single string',
             schema => 'bool*',
-            cmdline_aliases => {a=>{}},
+            cmdline_aliases => {a => {}},
         },
         clipboard => {
+            summary => 'Add items to clipboard',
             schema => ['str*', in=>['tee','only']],
             cmdline_aliases => {
-                Y=>{is_flag=>1, summary=>'Shortcut for --clipboard=tee', code=>sub { $_[0]{clipboard} = 'tee' }},
-                y=>{is_flag=>1, summary=>'Shortcut for --clipboard=only', code=>sub { $_[0]{clipboard} = 'only' }},
+                Y => {is_flag=>1, summary=>'Shortcut for --clipboard=tee', code=>sub { $_[0]{clipboard} = 'tee' }},
+                y => {is_flag=>1, summary=>'Shortcut for --clipboard=only', code=>sub { $_[0]{clipboard} = 'only' }},
             },
+        },
+        items => {
+            summary => 'Only return this many items',
+            schema => 'posint*',
+            cmdline_aliases => {n => {}},
+        },
+        shuffle => {
+            summary => 'Shuffle/randomize order or results',
+            schema => 'bool*',
+            cmdline_aliases => {r => {}},
+        },
+        separator => {
+            summary => 'String to add as separator between items (only when not specifying --array)',
+            schema => 'str*',
+            cmdline_aliases => {s => {}},
         },
     },
 };
@@ -46,6 +65,20 @@ sub template_permute {
     $ttp->template($template);
     my @res = $ttp->process;
 
+    if ($args{shuffle}) {
+        @res = List::Util::shuffle(@res);
+    }
+    if ($args{items} && $args{items} < @res) {
+        splice @res, $args{items};
+    }
+
+    unless ($args{array}) {
+        my $separator = $args{separator} // '';
+        $separator .= "\n" unless $separator =~ /\R\z/;
+        my $res = join $separator, @res;
+        @res = ($res);
+    }
+
     if ($clipboard) {
         require Clipboard::Any;
         for my $content (@res) {
@@ -58,7 +91,7 @@ sub template_permute {
     } elsif ($args{array}) {
         [200, "OK", \@res];
     } else {
-        [200, "OK", join("", @res)];
+        [200, "OK", $res[0]];
     }
 }
 
